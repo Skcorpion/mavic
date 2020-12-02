@@ -1,90 +1,101 @@
-let gulp = require('gulp'),
-  sass = require('gulp-sass'),
-  browserSync = require('browser-sync'),
-  uglify = require('gulp-uglify'),
-  concat = require('gulp-concat'),
-  rename = require('gulp-rename'),
-  del = require('del'),
-  autoprefixer = require('gulp-autoprefixer');
+const { src, dest, watch, parallel, series } = require('gulp');
 
-gulp.task('clean', async function () {
-  del.sync('dist');
-});
+const scss = require('gulp-sass');
+const concat = require('gulp-concat');
+const browserSync = require('browser-sync').create();
+const uglify = require('gulp-uglify-es').default;
+const autoprefixer = require('gulp-autoprefixer');
+const imagemin = require('gulp-imagemin');
+const del = require('del');
+const rename = require('gulp-rename');
 
-gulp.task('scss', function () {
-  return gulp
-    .src('app/scss/**/*.scss')
-    .pipe(sass({ outputStyle: 'compressed' }))
-    .pipe(
-      autoprefixer({
-        overrideBrowserslist: ['last 8 versions'],
-      })
-    )
-    .pipe(rename({ suffix: '.min' }))
-    .pipe(gulp.dest('app/css'))
-    .pipe(browserSync.reload({ stream: true }));
-});
+function cleanDist() {
+    return del('dist')
+}
 
-gulp.task('css', function () {
-  return gulp
-    .src([
+function images() {
+    return src('app/images/**/*')
+        .pipe(imagemin([
+            imagemin.gifsicle({interlaced: true}),
+            imagemin.mozjpeg({quality: 75, progressive: true}),
+            imagemin.optipng({optimizationLevel: 5}),
+            imagemin.svgo({
+                plugins: [
+                    {removeViewBox: true},
+                    {cleanupIDs: false}
+                ]
+            }) 
+        ]))
+        .pipe(dest('dist/images'))
+}
+
+function styles() {
+    return src('app/scss/**/*.scss')
+        .pipe(scss({outputStyle: 'compressed'}))
+        .pipe(autoprefixer({
+            overrideBrowserslist: ['last 10 version'],
+            grid: true
+        }))
+        .pipe(rename({ suffix: '.min' }))
+        .pipe(dest('app/css'))
+        .pipe(browserSync.stream())
+}
+
+function css() {
+  return src([
       'node_modules/normalize.css/normalize.css',
       'node_modules/slick-carousel/slick/slick.css',
       'node_modules/fullpage.js/dist/fullpage.css',
+  ])
+      .pipe(concat('_libs.scss'))
+      .pipe(dest('app/scss'))
+      .pipe(browserSync.stream())
+}
+
+function scripts() {
+    return src([
+        'node_modules/slick-carousel/slick/slick.js',
+        'node_modules/fullpage.js/dist/fullpage.js',
+        'node_modules/fullpage.js/vendors/scrolloverflow.js',
+        'app/js/main.js'
     ])
-    .pipe(concat('_libs.scss'))
-    .pipe(gulp.dest('app/scss'))
-    .pipe(browserSync.reload({ stream: true }));
-});
+        .pipe(concat('main.min.js'))
+        .pipe(uglify())
+        .pipe(dest('app/js'))
+        .pipe(browserSync.stream())
+}
 
-gulp.task('html', function () {
-  return gulp.src('app/*.html').pipe(browserSync.reload({ stream: true }));
-});
+function browsersync() {
+    browserSync.init({
+        server: {
+            baseDir: 'app/'
+        }
+    });
+}
 
-gulp.task('script', function () {
-  return gulp.src('app/js/*.js').pipe(browserSync.reload({ stream: true }));
-});
+function build() {
+    return src([
+        'app/*.html',
+        'app/css/style.min.css',
+        'app/js/main.min.js',
+        'app/fonts/**/*'
+    ], {base: 'app'})
+        .pipe(dest('dist'))
+}
 
-gulp.task('js', function () {
-  return gulp
-    .src(['node_modules/slick-carousel/slick/slick.js',
-          'node_modules/fullpage.js/dist/fullpage.js',
-          'node_modules/fullpage.js/vendors/scrolloverflow.js'])
-    .pipe(concat('libs.min.js'))
-    .pipe(uglify())
-    .pipe(gulp.dest('app/js'))
-    .pipe(browserSync.reload({ stream: true }));
-});
+function watching() {
+    watch(['app/*.html']).on('change', browserSync.reload);
+    watch(['app/scss/**/*.scss'], styles);
+    watch(['app/js/**/*.js', '!app/js/main.min.js'], scripts);
+}
 
-gulp.task('browser-sync', function () {
-  browserSync.init({
-    server: {
-      baseDir: 'app/',
-    },
-  });
-});
+exports.styles = styles;
+exports.css = css;
+exports.watching = watching;
+exports.browsersync = browsersync;
+exports.scripts = scripts;
+exports.images = images;
+exports.cleanDist = cleanDist;
 
-gulp.task('export', function () {
-  let buildHtml = gulp.src('app/**/*.html').pipe(gulp.dest('dist'));
-
-  let BuildCss = gulp.src('app/css/**/*.css').pipe(gulp.dest('dist/css'));
-
-  let BuildJs = gulp.src('app/js/**/*.js').pipe(gulp.dest('dist/js'));
-
-  let BuildFonts = gulp.src('app/fonts/**/*.*').pipe(gulp.dest('dist/fonts'));
-
-  let BuildImg = gulp.src('app/images/**/*.*').pipe(gulp.dest('dist/images'));
-});
-
-gulp.task('watch', function () {
-  gulp.watch('app/scss/**/*.scss', gulp.parallel('scss'));
-  gulp.watch('app/*.html', gulp.parallel('html'));
-  gulp.watch('app/js/*.js', gulp.parallel('script'));
-});
-
-gulp.task('build', gulp.series('clean', 'export'));
-
-gulp.task(
-  'default',
-  gulp.parallel('css', 'scss', 'js', 'browser-sync', 'watch')
-);
+exports.build = series(cleanDist, images, build);
+exports.default = parallel(css, styles, scripts, browsersync, watching)

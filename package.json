@@ -1,13 +1,13 @@
 {
-  "name": "gulp-start",
+  "name": "mavic",
   "version": "1.0.0",
-  "description": "start gulp",
+  "description": "",
   "main": "index.js",
   "homepage": "https://skcorpion.github.io/mavic",
   "scripts": {
-    "deploy": "gh-pages -d app"
+    "deploy": "gh-pages -d dist"
   },
-  "author": "Vadim Prokopchuk",
+  "author": "Roman Zubko",
   "license": "ISC",
   "devDependencies": {
     "browser-sync": "^2.26.5",
@@ -15,9 +15,11 @@
     "gulp": "^4.0.2",
     "gulp-autoprefixer": "^6.1.0",
     "gulp-concat": "^2.6.1",
+    "gulp-imagemin": "^7.1.0",
     "gulp-rename": "^1.4.0",
     "gulp-sass": "^4.0.2",
     "gulp-uglify": "^3.0.2",
+    "gulp-uglify-es": "^2.0.0",
     "normalize.css": "^8.0.1"
   },
   "dependencies": {
