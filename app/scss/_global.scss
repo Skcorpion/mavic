@@ -76,6 +76,11 @@ body {
   overflow-x: hidden;
   position: relative;
   color: #fff;
+  background-image: url('../images/page-bg.jpg');
+  background-color: rgb(34, 32, 32);
+  background-repeat: no-repeat;
+  background-position: top center;
+  background-size: cover;
 }
 
 .container {
@@ -85,10 +90,6 @@ body {
 }
 
 .page-section {
-  background-image: url('../images/page-bg.jpg');
-  background-repeat: no-repeat;
-  background-position: top center;
-  background-size: cover;
   position: relative;
   &::before {
     content: '';
